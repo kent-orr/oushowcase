@@ -1,0 +1,99 @@
+---
+title: Getting Started - Data Cleaning
+author: Kent Orr
+date: '2022-05-21'
+slug: getting-started-data-cleaning
+categories: []
+tags: []
+---
+
+Every data project starts with a broad overview of the information at hand and formation of research questions or business objectives. In this case the questions are conveniently provided. Below is a simple overview of the research questions and provided data sets. 
+
+```{r setup}
+library(data.table)
+library(ggplot2)
+
+for (i in list.files("/home/kent/Documents/oushowcase/content/data")) {
+  if (!grepl(".csv", i)) return()
+  nm = gsub(".csv", "", i) 
+  assign(nm, fread(paste0("/home/kent/Documents/oushowcase/content/data/",i)) |> 
+           janitor::clean_names()
+         )
+}
+```
+
+The state has launched the ‘Smart Start’ Program and the university is being asked to review entry level courses. The following hypotheses are to be tested:
+
+* What are our overall success rates (C or better)?  
+* What student information helps predict success in their courses?   
+* Are success rates improving or getting worse?  
+* Are some of their instructors better than others?  
+* Does teaching frequently the course improve instructor performance over time?  
+
+## The Data
+
+Common keys:
+
+Before going any further, it is plain that the data provided resembles a relational database. I want to know how the databases interact. I'll plot the common keys between tables and give a brief, single sentence overview of the content. This document will be used as a reference during investigation.
+
+```{r}
+#| echo: true
+#| code-fold: true
+
+lapply(c("acad_plan", "class_instructors", "class_inventory", "course_enrollments", "student_details"),
+       \(x) {
+         data.table(table = x, cols = names(get(x)))
+       }) |>
+  rbindlist() -> tables
+
+tables[, merge(.SD, tables[,.N, cols])][,common := N>1][] |>
+  ggplot(aes(x = reorder(table, -N), y = cols, fill = common, label = table)) + 
+  geom_tile(color = "black") + 
+  theme_bw() +
+  labs(title = "Overview of Data Keys and Columns",
+       x = "Tables", y = "Columns", fill = "Is A Common Key") + 
+  theme(legend.position = "bottom") + 
+  scale_fill_viridis_d(option = "D") 
+
+```
+
+
+#### class_instructors
+
+links instructors with a course number and term.
+
+```{r}
+class_instructors
+```
+
+#### course_enrollments
+
+link students to specific course numbers per term, along with some metadata such as hours carried. 
+
+```{r}
+course_enrollments
+```
+
+#### class_inventory
+
+metadata for courses
+
+```{r}
+class_inventory
+```
+
+#### student_details
+
+information about a student, demographic data independent of university experience
+
+```{r}
+student_details
+```
+
+#### acad_plan
+
+metadata on various academic plans
+
+```{r}
+acad_plan
+```
