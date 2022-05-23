@@ -1,0 +1,72 @@
+---
+title: What is the Overall Success Rate?
+author: Kent Orr
+date: '2022-05-21'
+slug: what-is-the-overall-success-rate
+categories: []
+tags: []
+---
+
+<script src="{{< blogdown/postref >}}index_files/kePrint/kePrint.js"></script>
+<link href="{{< blogdown/postref >}}index_files/lightable/lightable.css" rel="stylesheet" />
+
+
+<p>What are our overall success rates? (C or better). To determine this simple ratio, we first need to factor success in accordance with the <code>course_enrollments</code> data set which includes official grades.</p>
+<pre class="r"><code>source(&quot;~/Documents/oushowcase/content/scripts/clean.R&quot;)
+
+copy(raw_data$course_enrollments)[ 
+  # spare the typing and use regex to find successful scores
+  ,success := grepl(&quot;A|B|C(?!\\-)&quot;, official_grade, perl = T) &amp; 
+    completed_flag == 1 &amp; official_grade != &quot;NC&quot; # the one that got away
+  ][,.N, success
+    ][,percent := N/sum(N)
+      ][] |&gt;
+  {\(x) {
+    assign(&quot;success_rate&quot;, x[(success)]$percent,
+           envir = .GlobalEnv)
+    return(x)
+  }}() |&gt;
+  kableExtra::kable(format.args = list(big.mark = &quot;,&quot;, digits = 2)) |&gt;
+  kableExtra::kable_styling()</code></pre>
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+success
+</th>
+<th style="text-align:right;">
+N
+</th>
+<th style="text-align:right;">
+percent
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+TRUE
+</td>
+<td style="text-align:right;">
+10,573
+</td>
+<td style="text-align:right;">
+0.64
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+FALSE
+</td>
+<td style="text-align:right;">
+5,822
+</td>
+<td style="text-align:right;">
+0.36
+</td>
+</tr>
+</tbody>
+</table>
+<div id="there-is-a-64-overall-student-success-rate." class="section level1">
+<h1>There is a <strong>64%</strong> overall student success rate.</h1>
+</div>

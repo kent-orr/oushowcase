@@ -1,16 +1,19 @@
 ---
-title: Getting Started - Data Cleaning
+title: Getting Started - Investigating Raw Data
 author: Kent Orr
 date: '2022-05-21'
 slug: getting-started-data-cleaning
 categories: []
 tags: []
+# output:
+#   blogdown::html_page:
+#     toc: true
 ---
 
 Every data project starts with a broad overview of the information at hand and formation of research questions or business objectives. In this case the questions are conveniently provided. Below is a simple overview of the research questions and provided data sets. 
 
-```{r setup}
-library(data.table)
+```{r setup} 
+library(data.table) 
 library(ggplot2)
 
 for (i in list.files("/home/kent/Documents/oushowcase/content/data")) {
@@ -21,6 +24,8 @@ for (i in list.files("/home/kent/Documents/oushowcase/content/data")) {
          )
 }
 ```
+
+## Research Questions
 
 The state has launched the ‘Smart Start’ Program and the university is being asked to review entry level courses. The following hypotheses are to be tested:
 
@@ -58,7 +63,7 @@ tables[, merge(.SD, tables[,.N, cols])][,common := N>1][] |>
 ```
 
 
-#### class_instructors
+### class_instructors
 
 links instructors with a course number and term.
 
@@ -66,7 +71,7 @@ links instructors with a course number and term.
 class_instructors
 ```
 
-#### course_enrollments
+### course_enrollments
 
 link students to specific course numbers per term, along with some metadata such as hours carried. 
 
@@ -74,7 +79,7 @@ link students to specific course numbers per term, along with some metadata such
 course_enrollments
 ```
 
-#### class_inventory
+### class_inventory
 
 metadata for courses
 
@@ -82,7 +87,7 @@ metadata for courses
 class_inventory
 ```
 
-#### student_details
+### student_details
 
 information about a student, demographic data independent of university experience
 
@@ -90,7 +95,7 @@ information about a student, demographic data independent of university experien
 student_details
 ```
 
-#### acad_plan
+### acad_plan
 
 metadata on various academic plans
 

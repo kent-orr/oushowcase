@@ -15,9 +15,7 @@ permalinks:
 menu:
   main:
     - name: Kent Orr OU Showcase
-      url: /about/
-    - name: GitHub
-      url: https://github.com/kent-orr
+      url: /post/
 params:
   MathJaxCDN: //cdnjs.cloudflare.com/ajax/libs
   MathJaxVersion: 2.7.5
@@ -27,7 +25,7 @@ params:
   highlightjsLang:
     - r
     - yaml
-  highlightjsTheme: github
+  highlightjsTheme: atom-one-dark
   highlightjsVersion: 9.12.0
   logo:
     alt: Logo

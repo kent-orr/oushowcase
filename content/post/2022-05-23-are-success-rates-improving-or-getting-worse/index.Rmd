@@ -1,0 +1,74 @@
+---
+title: Are Success Rates Improving or Getting Worse
+author: Kent Orr
+date: '2022-05-23'
+slug: are-success-rates-improving-or-getting-worse
+categories: []
+tags: []
+---
+
+```{r setup, include=FALSE}
+source("~/Documents/oushowcase/content/scripts/clean.R")
+```
+
+## Defining the Problem
+
+Over time `term_code`, are success rates improving or not? Since we're working with frequencies and ratios we can use a Chi-squares to determine if there is any change between success rates and terms. 
+
+```{r}
+copy(course_enrollments)[,.N,.(term_code, success)][,percent := N/sum(N), term_code] |>
+  ggplot(aes(x = term_code, y = percent, fill = success)) +
+  geom_col() +
+  theme_classic() + 
+  scale_fill_viridis_d()
+
+copy(course_enrollments)[,.(term_code, success)] |>
+  table() |>
+  chisq.test()
+```
+
+There is a significant difference between success rates between terms. Assuming the term codes are sequential, can we discern a specific pattern of increasing or decreasing from the success rates? To answer this question, I will use a simple linear regression model built on the ratio of successful students per term, and judge goodness of fit based on $R^2$, the test statistic / p. value, and plotting the residuals to seek a pattern in errors. 
+
+```{r}
+lm_grow <- 
+copy(course_enrollments)[,.N,.(term_code, success)][,percent := N/sum(N)] |>
+  lm(N ~ term_code + success, data = _)
+
+lm_grow |> summary()
+```
+
+```{r}
+lm_grow$residuals |> plot()
+copy(course_enrollments)[,.N,.(term_code, success)][,preds := predict(lm_grow, .SD)] |>
+  ggplot(aes(x = term_code)) +
+  geom_line(aes(y = N, color = success)) + 
+  geom_line(aes(y = preds, color = success), linetype = 2) + 
+  theme_classic()
+```
+
+I am concerned that this model is picking up the reduction in overall students per term. I'll re-run the regression on the percentage points of successful students. 
+
+```{r}
+lm_grow <-
+copy(course_enrollments)[,.N,.(term_code, success)][,percent := N/sum(N), term_code][(success)] |>
+  lm(percent ~ term_code, data = _)
+
+lm_grow |> summary()
+lm_grow$residuals |> plot()
+```
+
+```{r}
+copy(course_enrollments)[,.N,.(term_code, success)
+                         ][,percent := N/sum(N), term_code
+                           ][(success)
+                             ][,preds := predict(lm_grow, .SD)][] |>
+  ggplot(aes(x = term_code)) +
+  geom_line(aes(y = percent, color = success)) + 
+  geom_line(aes(y = preds, color = success), linetype = 2) + 
+  theme_classic() + 
+  coord_cartesian(ylim = c(0, 1))
+```
+
+While the initial test on frequencies likely picked up the overall decline of students, regressing on the actual ratios of student success per term yields an incredibly weak and not statistically significant relationship between term and success rates. 
+
+There is little evidence to say that student success rates are declining. 

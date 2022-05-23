@@ -1,0 +1,209 @@
+---
+title: What student information helps predict success in their courses?
+author: Kent Orr
+date: '2022-05-21'
+slug: what-student-information-helps-predict-success-in-their-courses
+categories: []
+tags: []
+output: html_document
+---
+
+
+
+<div id="id__article_">
+<div id="defining-the-problem" class="section level2">
+<h2>Defining the Problem</h2>
+<p>This research question builds on our prior understanding of the term <strong>success</strong> being a C or better grade. We want to seek out variables that can predict official grades of a C or above. We also know that we want to work within the confines of student information. Because we know we’ll need the <code>course_enrollments</code> data, we can reference the data keys and columns to see what relational databases have student information which we can connect to successful outcomes.</p>
+<p><code>course_enrollments</code> shares keys with <code>student_details</code> and <code>acad_plan</code>. There are of course other relations, but it seems safe to rule them out when considering the small scope of student information.</p>
+</div>
+<div id="creating-the-query" class="section level2">
+<h2>Creating the Query</h2>
+<details>
+<summary>
+The nitty gritty of how the data was joined and cleaned
+</summary>
+<p>We want to merge student attributes with their course data using a left join.</p>
+<pre class="r"><code>cs &lt;- course_enrollments[,merge(.SD, raw_data$student_details)]</code></pre>
+<div id="cleaning-the-query" class="section level3">
+<h3>Cleaning the query</h3>
+<p>The resulting data set gives the first obstacle, handling <code>NA</code> values for numeric variables. On the one hand a scalar response lends itself to an elegant set of predictive methods, but at the same time not having a high school GPA entry is likely a significant indicator of academic success. The same goes for whether a student took the ACT or not. Even worse, the percentage of respondents missing one or the other are close to a quarter or a third.</p>
+<pre class="r"><code>lapply(cs[,.(act_score, hs_gpa_entry)], \(x) {length(x)/length(x[which(is.na(x))])})</code></pre>
+<pre><code>## $act_score
+## [1] 24.8786
+## 
+## $hs_gpa_entry
+## [1] 32.27362</code></pre>
+<p>For each variable we will answer two questions that help us decide what to do next.</p>
+<ol style="list-style-type: decimal">
+<li>Is non-response predictive of course success?<br />
+</li>
+<li>Is there a linear relationship between selected variables and successful outcomes?</li>
+</ol>
+<div id="act_score" class="section level4">
+<h4>act_score</h4>
+<pre class="r"><code>copy(cs)[,.N, .(act_na = !is.na(act_score), success)][,percent := N/sum(N), act_na] |&gt;
+  ggplot(aes(x = act_na, y = success, fill = percent, 
+             label = scales::percent(percent, accuracy = 1))) + 
+  geom_tile() + geom_label(color = &quot;white&quot;) + 
+  theme_classic() + theme(legend.position = &quot;bottom&quot;) + 
+  labs(title = &quot;Distribution of ACT Resp vs. Non-Resp&quot;,
+       x = &quot;ACT Score Reported&quot;, y = &quot;C or Above&quot;) +
+  scale_fill_viridis_c(labels = scales::percent_format(accuracy = 1),
+                       limits = c(.35, .65), breaks = seq(.35, .65, .1))</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<pre class="r"><code>copy(cs)[,.(act_na = is.na(act_score), success)] |&gt; 
+  table() |&gt; 
+  chisq.test()  </code></pre>
+<pre><code>## 
+##  Pearson&#39;s Chi-squared test with Yates&#39; continuity correction
+## 
+## data:  table(copy(cs)[, .(act_na = is.na(act_score), success)])
+## X-squared = 25.256, df = 1, p-value = 5.021e-07</code></pre>
+<p>We can see that the distribution of successful courses among students who have an ACT score is significantly different from those who did not report an ACT score. In fact, ACT reporting students are ~10% more likely to succeed.</p>
+<p>We will now look at the scalar portion of the variable by plotting the distribution of ACT scores against the official grades earned.</p>
+<pre class="r"><code>copy(cs) |&gt;
+  ggplot(aes(x = act_score, y = official_grade)) + 
+  ggridges::geom_density_ridges() + 
+  theme_minimal()</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<pre class="r"><code>copy(cs) |&gt;
+  ggplot(aes(x = act_score, y = success)) + 
+  ggridges::geom_density_ridges() + 
+  theme_minimal()</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-4-2.png" width="672" /></p>
+<p>While a quick visual inspection shows the potential of a linear relationship in grades earned in class, such as D- to A, the same does not hold true for the various other grades which do not qualify as <code>success</code>. When simply comparing all successful respondents with an ACT score with those who did not succeed, there is no immediately distinguishable hierarchy.</p>
+<p>To capture the scalar effect on D grades and above, and to capture the categorical effect for WF, DROP, and others, I will impute two variables. One an ordered factor that includes “No Response” and the quartile ranges for all responses.</p>
+<pre class="r"><code>student_details[,act_score_resp := !is.na(act_score)] 
+student_details$act_score |&gt; quantile(seq(0, 1, .25), na.rm = T) -&gt; x
+student_details$act_score_factor &lt;- student_details$act_score |&gt; cut(x, include.lowest = F) |&gt; as.character()
+student_details$act_score_factor[which(is.na(student_details$act_score_factor))] &lt;- &quot;No Score&quot;
+student_details$act_score_factor &lt;- student_details$act_score_factor |&gt; 
+  factor(levels = c(&quot;No Score&quot;, unique(student_details$act_score_factor) |&gt; 
+                      sort() |&gt; {\(x) x[which(x != &quot;No Score&quot;)]}()))</code></pre>
+The same process was applied to <code>hs_gpa_entry</code>.
+</details>
+</div>
+</div>
+</div>
+<div id="investigating-predictors-of-success" class="section level2">
+<h2>Investigating Predictors of Success</h2>
+<details>
+<summary>
+View
+</summary>
+<p>To determine the most important variables from student information, I performed an ANOVA on a logistic regression model. Instead of using the continuous results from the <code>act_score</code> and <code>hs_gpa_entry</code> variables, the imputed factors were used.</p>
+<pre class="r"><code>cs &lt;- merge(course_enrollments[,.(student_id_number, success)], student_details) 
+set.seed(100)
+samp &lt;- sample(nrow(cs), .8 * nrow(cs))
+cs_train &lt;- copy(cs)[samp][, .(
+  success,
+  # act_score,
+  act_score_factor,
+  # act_score_resp,
+  # hs_gpa_entry,
+  hs_gpa_entry_factor,
+  # hs_gpa_entry_resp,
+  hardship_score
+)]
+
+cs_test &lt;- copy(cs)[, .(
+  success,
+  # act_score,
+  act_score_factor,
+  # act_score_resp,
+  # hs_gpa_entry,
+  hs_gpa_entry_factor,
+  # hs_gpa_entry_resp,
+  hardship_score
+)][!samp]
+
+m1 &lt;- glm(success ~ ., data = cs_train, family = binomial(link = &quot;logit&quot;))
+summary(m1)</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = success ~ ., family = binomial(link = &quot;logit&quot;), 
+##     data = cs_train)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -1.6830  -1.3553   0.8240   0.9391   1.3794  
+## 
+## Coefficients:
+##                                 Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)                     0.267987   0.101069   2.652 0.008013 ** 
+## act_score_factor(0,20]          0.479640   0.145058   3.307 0.000945 ***
+## act_score_factor(20,23]         0.454296   0.143064   3.175 0.001496 ** 
+## act_score_factor(23,26]         0.138969   0.143963   0.965 0.334391    
+## act_score_factor(26,36]        -0.235107   0.145834  -1.612 0.106928    
+## hs_gpa_entry_factor(0.21,3.06]  0.005787   0.160164   0.036 0.971180    
+## hs_gpa_entry_factor(3.06,3.42]  0.183397   0.159372   1.151 0.249837    
+## hs_gpa_entry_factor(3.42,3.76]  0.376187   0.159420   2.360 0.018288 *  
+## hs_gpa_entry_factor(3.76,553]   0.390841   0.159927   2.444 0.014531 *  
+## hardship_score1                -0.281806   0.055104  -5.114 3.15e-07 ***
+## hardship_score2                -0.204608   0.056637  -3.613 0.000303 ***
+## hardship_score3                -0.502012   0.053537  -9.377  &lt; 2e-16 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 17041  on 13115  degrees of freedom
+## Residual deviance: 16745  on 13104  degrees of freedom
+## AIC: 16769
+## 
+## Number of Fisher Scoring iterations: 4</code></pre>
+<pre class="r"><code>?anova.glm
+anova(m1, test = &quot;Chisq&quot;)</code></pre>
+<pre><code>## Analysis of Deviance Table
+## 
+## Model: binomial, link: logit
+## 
+## Response: success
+## 
+## Terms added sequentially (first to last)
+## 
+## 
+##                     Df Deviance Resid. Df Resid. Dev  Pr(&gt;Chi)    
+## NULL                                13115      17040              
+## act_score_factor     4  141.166     13111      16899 &lt; 2.2e-16 ***
+## hs_gpa_entry_factor  4   56.376     13107      16843 1.672e-11 ***
+## hardship_score       3   98.358     13104      16745 &lt; 2.2e-16 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre class="r"><code>test_res &lt;- predict(m1, cs_test, type = &quot;response&quot;)
+test_res[which(test_res &gt; .5)] &lt;- TRUE
+test_res[which(test_res &lt;= .5)] &lt;- FALSE
+
+caret::confusionMatrix(test_res |&gt; as.factor(),
+                       cs_test$success |&gt; as.integer() |&gt; as.factor())</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    0    1
+##          0   66   47
+##          1 1119 2047
+##                                           
+##                Accuracy : 0.6444          
+##                  95% CI : (0.6277, 0.6608)
+##     No Information Rate : 0.6386          
+##     P-Value [Acc &gt; NIR] : 0.2509          
+##                                           
+##                   Kappa : 0.0414          
+##                                           
+##  Mcnemar&#39;s Test P-Value : &lt;2e-16          
+##                                           
+##             Sensitivity : 0.05570         
+##             Specificity : 0.97755         
+##          Pos Pred Value : 0.58407         
+##          Neg Pred Value : 0.64656         
+##              Prevalence : 0.36139         
+##          Detection Rate : 0.02013         
+##    Detection Prevalence : 0.03446         
+##       Balanced Accuracy : 0.51663         
+##                                           
+##        &#39;Positive&#39; Class : 0               
+## </code></pre>
+</details>
+<p>While not particularly strong predictors, <code>act_score</code>, <code>hs_gpa_entry</code>, and <code>hardship_score</code>, are the best predictors in the student information respectively.</p>
+</div>
+</div>

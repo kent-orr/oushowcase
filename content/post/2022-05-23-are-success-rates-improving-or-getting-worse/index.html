@@ -1,0 +1,102 @@
+---
+title: Are Success Rates Improving or Getting Worse
+author: Kent Orr
+date: '2022-05-23'
+slug: are-success-rates-improving-or-getting-worse
+categories: []
+tags: []
+---
+
+
+
+<div id="defining-the-problem" class="section level2">
+<h2>Defining the Problem</h2>
+<p>Over time <code>term_code</code>, are success rates improving or not? Since we’re working with frequencies and ratios we can use a Chi-squares to determine if there is any change between success rates and terms.</p>
+<pre class="r"><code>copy(course_enrollments)[,.N,.(term_code, success)][,percent := N/sum(N), term_code] |&gt;
+  ggplot(aes(x = term_code, y = percent, fill = success)) +
+  geom_col() +
+  theme_classic() + 
+  scale_fill_viridis_d()</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-1-1.png" width="672" /></p>
+<pre class="r"><code>copy(course_enrollments)[,.(term_code, success)] |&gt;
+  table() |&gt;
+  chisq.test()</code></pre>
+<pre><code>## 
+##  Pearson&#39;s Chi-squared test
+## 
+## data:  table(copy(course_enrollments)[, .(term_code, success)])
+## X-squared = 34.986, df = 5, p-value = 1.514e-06</code></pre>
+<p>There is a significant difference between success rates between terms. Assuming the term codes are sequential, can we discern a specific pattern of increasing or decreasing from the success rates? To answer this question, I will use a simple linear regression model built on the ratio of successful students per term, and judge goodness of fit based on <span class="math inline">\(R^2\)</span>, the test statistic / p. value, and plotting the residuals to seek a pattern in errors.</p>
+<pre class="r"><code>lm_grow &lt;- 
+copy(course_enrollments)[,.N,.(term_code, success)][,percent := N/sum(N)] |&gt;
+  lm(N ~ term_code + success, data = _)
+
+lm_grow |&gt; summary()</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = N ~ term_code + success, data = copy(course_enrollments)[, 
+##     .N, .(term_code, success)][, `:=`(percent, N/sum(N))])
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -207.05 -102.82   -7.16   62.69  350.37 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)  1280.38     124.03  10.323 2.74e-06 ***
+## term_code     -88.59      29.17  -3.037   0.0141 *  
+## successTRUE   791.83      99.62   7.948 2.33e-05 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 172.6 on 9 degrees of freedom
+## Multiple R-squared:  0.8894, Adjusted R-squared:  0.8649 
+## F-statistic:  36.2 on 2 and 9 DF,  p-value: 4.969e-05</code></pre>
+<pre class="r"><code>lm_grow$residuals |&gt; plot()</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<pre class="r"><code>copy(course_enrollments)[,.N,.(term_code, success)][,preds := predict(lm_grow, .SD)] |&gt;
+  ggplot(aes(x = term_code)) +
+  geom_line(aes(y = N, color = success)) + 
+  geom_line(aes(y = preds, color = success), linetype = 2) + 
+  theme_classic()</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-3-2.png" width="672" /></p>
+<p>I am concerned that this model is picking up the reduction in overall students per term. I’ll re-run the regression on the percentage points of successful students.</p>
+<pre class="r"><code>lm_grow &lt;-
+copy(course_enrollments)[,.N,.(term_code, success)][,percent := N/sum(N), term_code][(success)] |&gt;
+  lm(percent ~ term_code, data = _)
+
+lm_grow |&gt; summary()</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = percent ~ term_code, data = copy(course_enrollments)[, 
+##     .N, .(term_code, success)][, `:=`(percent, N/sum(N)), term_code][(success)])
+## 
+## Residuals:
+##          1          2          3          4          5          6 
+##  0.0206999 -0.0003973  0.0196472 -0.0058983 -0.0314505 -0.0026010 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)  0.665999   0.019996  33.307 4.85e-06 ***
+## term_code   -0.006431   0.005134  -1.252    0.279    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.02148 on 4 degrees of freedom
+## Multiple R-squared:  0.2817, Adjusted R-squared:  0.1021 
+## F-statistic: 1.569 on 1 and 4 DF,  p-value: 0.2786</code></pre>
+<pre class="r"><code>lm_grow$residuals |&gt; plot()</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<pre class="r"><code>copy(course_enrollments)[,.N,.(term_code, success)
+                         ][,percent := N/sum(N), term_code
+                           ][(success)
+                             ][,preds := predict(lm_grow, .SD)][] |&gt;
+  ggplot(aes(x = term_code)) +
+  geom_line(aes(y = percent, color = success)) + 
+  geom_line(aes(y = preds, color = success), linetype = 2) + 
+  theme_classic() + 
+  coord_cartesian(ylim = c(0, 1))</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p>While the initial test on frequencies likely picked up the overall decline of students, regressing on the actual ratios of student success per term yields an incredibly weak and not statistically significant relationship between term and success rates.</p>
+<p>There is little evidence to say that student success rates are declining.</p>
+</div>

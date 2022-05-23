@@ -1,0 +1,150 @@
+---
+title: What student information helps predict success in their courses?
+author: Kent Orr
+date: '2022-05-21'
+slug: what-student-information-helps-predict-success-in-their-courses
+categories: []
+tags: []
+output: html_document
+---
+
+<div id="_article_">
+
+## Defining the Problem 
+
+This research question builds on our prior understanding of the term **success** being a C or better grade. We want to seek out variables that can predict official grades of a C or above. We also know that we want to work within the confines of student information. Because we know we'll need the `course_enrollments` data, we can reference the data keys and columns to see what relational databases have student information which we can connect to successful outcomes. 
+
+`course_enrollments` shares keys with `student_details` and `acad_plan`. There are of course other relations, but it seems safe to rule them out when considering the small scope of student information.
+
+```{r setup, include=FALSE}
+source("~/Documents/oushowcase/content/scripts/clean.R")
+cs <- course_enrollments[,merge(.SD, raw_data$student_details)]
+```
+
+## Creating the Query  
+
+<details>
+<summary> The nitty gritty of how the data was joined and cleaned</summary>
+
+We want to merge student attributes with their course data using a left join. 
+
+```{r, eval=FALSE}
+cs <- course_enrollments[,merge(.SD, raw_data$student_details)]
+```
+
+### Cleaning the query
+
+The resulting data set gives the first obstacle, handling `NA` values for numeric variables. On the one hand a scalar response lends itself to an elegant set of predictive methods, but at the same time not having a high school GPA entry is likely a significant indicator of academic success. The same goes for whether a student took the ACT or not. Even worse, the percentage of respondents missing one or the other are close to a quarter or a third. 
+
+```{r}
+lapply(cs[,.(act_score, hs_gpa_entry)], \(x) {length(x)/length(x[which(is.na(x))])})
+```
+
+For each variable we will answer two questions that help us decide what to do next.
+
+1. Is non-response predictive of course success?  
+2. Is there a linear relationship between selected variables and successful outcomes?  
+
+#### act_score
+
+```{r}
+copy(cs)[,.N, .(act_na = !is.na(act_score), success)][,percent := N/sum(N), act_na] |>
+  ggplot(aes(x = act_na, y = success, fill = percent, 
+             label = scales::percent(percent, accuracy = 1))) + 
+  geom_tile() + geom_label(color = "white") + 
+  theme_classic() + theme(legend.position = "bottom") + 
+  labs(title = "Distribution of ACT Resp vs. Non-Resp",
+       x = "ACT Score Reported", y = "C or Above") +
+  scale_fill_viridis_c(labels = scales::percent_format(accuracy = 1),
+                       limits = c(.35, .65), breaks = seq(.35, .65, .1))
+
+copy(cs)[,.(act_na = is.na(act_score), success)] |> 
+  table() |> 
+  chisq.test()  
+```
+
+We can see that the distribution of successful courses among students who have an ACT score is significantly different from those who did not report an ACT score. In fact, ACT reporting students are ~10% more likely to succeed. 
+
+We will now look at the scalar portion of the variable by plotting the distribution of ACT scores against the official grades earned. 
+
+```{r, warning=FALSE, message=FALSE}
+copy(cs) |>
+  ggplot(aes(x = act_score, y = official_grade)) + 
+  ggridges::geom_density_ridges() + 
+  theme_minimal()
+
+copy(cs) |>
+  ggplot(aes(x = act_score, y = success)) + 
+  ggridges::geom_density_ridges() + 
+  theme_minimal()
+```
+
+While a quick visual inspection shows the potential of a linear relationship in grades earned in class, such as D- to A, the same does not hold true for the various other grades which do not qualify as `success`. When simply comparing all successful respondents with an ACT score with those who did not succeed, there is no immediately distinguishable hierarchy. 
+
+To capture the scalar effect on D grades and above, and to capture the categorical effect for WF, DROP, and others, I will impute two variables. One an ordered factor that includes "No Response" and the quartile ranges for all responses. 
+
+```{r, echo=TRUE, eval=F}
+student_details[,act_score_resp := !is.na(act_score)] 
+student_details$act_score |> quantile(seq(0, 1, .25), na.rm = T) -> x
+student_details$act_score_factor <- student_details$act_score |> cut(x, include.lowest = F) |> as.character()
+student_details$act_score_factor[which(is.na(student_details$act_score_factor))] <- "No Score"
+student_details$act_score_factor <- student_details$act_score_factor |> 
+  factor(levels = c("No Score", unique(student_details$act_score_factor) |> 
+                      sort() |> {\(x) x[which(x != "No Score")]}()))
+```
+
+The same process was applied to `hs_gpa_entry`.
+</details>
+
+## Investigating Predictors of Success
+
+<details> <summary>View</summary>
+
+To determine the most important variables from student information, I performed an ANOVA on a logistic regression model. Instead of using the continuous results from the `act_score` and `hs_gpa_entry` variables, the imputed factors were used. 
+
+```{r}
+
+cs <- merge(course_enrollments[,.(student_id_number, success)], student_details) 
+set.seed(100)
+samp <- sample(nrow(cs), .8 * nrow(cs))
+cs_train <- copy(cs)[samp][, .(
+  success,
+  # act_score,
+  act_score_factor,
+  # act_score_resp,
+  # hs_gpa_entry,
+  hs_gpa_entry_factor,
+  # hs_gpa_entry_resp,
+  hardship_score
+)]
+
+cs_test <- copy(cs)[, .(
+  success,
+  # act_score,
+  act_score_factor,
+  # act_score_resp,
+  # hs_gpa_entry,
+  hs_gpa_entry_factor,
+  # hs_gpa_entry_resp,
+  hardship_score
+)][!samp]
+
+m1 <- glm(success ~ ., data = cs_train, family = binomial(link = "logit"))
+summary(m1)
+?anova.glm
+anova(m1, test = "Chisq")
+
+test_res <- predict(m1, cs_test, type = "response")
+test_res[which(test_res > .5)] <- TRUE
+test_res[which(test_res <= .5)] <- FALSE
+
+caret::confusionMatrix(test_res |> as.factor(),
+                       cs_test$success |> as.integer() |> as.factor())
+```
+
+
+</details>
+
+While not particularly strong predictors, `act_score`, `hs_gpa_entry`, and `hardship_score`, are the best predictors in the student information respectively. 
+
+</div>

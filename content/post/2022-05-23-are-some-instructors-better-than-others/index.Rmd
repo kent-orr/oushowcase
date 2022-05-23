@@ -1,0 +1,15 @@
+---
+title: Are some instructors better than others?
+author: Kent Orr
+date: '2022-05-23'
+slug: are-some-instructors-better-than-others
+categories: []
+tags: []
+---
+
+```{r setup, include=FALSE}
+source("~/Documents/oushowcase/content/scripts/clean.R")
+```
+
+## Defining the Problem
+

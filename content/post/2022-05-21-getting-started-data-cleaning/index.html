@@ -5,12 +5,15 @@ date: '2022-05-21'
 slug: getting-started-data-cleaning
 categories: []
 tags: []
+# output:
+#   blogdown::html_page:
+#     toc: true
 ---
 
 
 
 <p>Every data project starts with a broad overview of the information at hand and formation of research questions or business objectives. In this case the questions are conveniently provided. Below is a simple overview of the research questions and provided data sets.</p>
-<pre class="r"><code>library(data.table)
+<pre class="r"><code>library(data.table) 
 library(ggplot2)
 
 for (i in list.files(&quot;/home/kent/Documents/oushowcase/content/data&quot;)) {
@@ -20,6 +23,8 @@ for (i in list.files(&quot;/home/kent/Documents/oushowcase/content/data&quot;)) 
            janitor::clean_names()
          )
 }</code></pre>
+<div id="research-questions" class="section level2">
+<h2>Research Questions</h2>
 <p>The state has launched the ‘Smart Start’ Program and the university is being asked to review entry level courses. The following hypotheses are to be tested:</p>
 <ul>
 <li>What are our overall success rates (C or better)?<br />
@@ -32,6 +37,7 @@ for (i in list.files(&quot;/home/kent/Documents/oushowcase/content/data&quot;)) 
 </li>
 <li>Does teaching frequently the course improve instructor performance over time?</li>
 </ul>
+</div>
 <div id="the-data" class="section level2">
 <h2>The Data</h2>
 <p>Common keys:</p>
@@ -51,8 +57,8 @@ tables[, merge(.SD, tables[,.N, cols])][,common := N&gt;1][] |&gt;
   theme(legend.position = &quot;bottom&quot;) + 
   scale_fill_viridis_d(option = &quot;D&quot;) </code></pre>
 <p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-1-1.png" width="672" /></p>
-<div id="class_instructors" class="section level4">
-<h4>class_instructors</h4>
+<div id="class_instructors" class="section level3">
+<h3>class_instructors</h3>
 <p>links instructors with a course number and term.</p>
 <pre class="r"><code>class_instructors</code></pre>
 <pre><code>##      term_code class_nbr instructor_id_number
@@ -68,8 +74,8 @@ tables[, merge(.SD, tables[,.N, cols])][,common := N&gt;1][] |&gt;
 ## 681:         6     14553                 1886
 ## 682:         6     14983                 2680</code></pre>
 </div>
-<div id="course_enrollments" class="section level4">
-<h4>course_enrollments</h4>
+<div id="course_enrollments" class="section level3">
+<h3>course_enrollments</h3>
 <p>link students to specific course numbers per term, along with some metadata such as hours carried.</p>
 <pre class="r"><code>course_enrollments</code></pre>
 <pre><code>##        student_id_number term_code class_nbr completed_flag official_grade
@@ -97,8 +103,8 @@ tables[, merge(.SD, tables[,.N, cols])][,common := N&gt;1][] |&gt;
 ## 16394:    BC5329             8
 ## 16395:    BC5329            17</code></pre>
 </div>
-<div id="class_inventory" class="section level4">
-<h4>class_inventory</h4>
+<div id="class_inventory" class="section level3">
+<h3>class_inventory</h3>
 <p>metadata for courses</p>
 <pre class="r"><code>class_inventory</code></pre>
 <pre><code>##      term_code semester subject catalog_nbr class_nbr class_description
@@ -126,8 +132,8 @@ tables[, merge(.SD, tables[,.N, cols])][,common := N&gt;1][] |&gt;
 ## 681:              16
 ## 682:              16</code></pre>
 </div>
-<div id="student_details" class="section level4">
-<h4>student_details</h4>
+<div id="student_details" class="section level3">
+<h3>student_details</h3>
 <p>information about a student, demographic data independent of university experience</p>
 <pre class="r"><code>student_details</code></pre>
 <pre><code>##        student_id_number act_score hs_gpa_entry hardship_score
@@ -143,8 +149,8 @@ tables[, merge(.SD, tables[,.N, cols])][,common := N&gt;1][] |&gt;
 ## 97111:             97111        18        3.368              0
 ## 97112:             97112        25        4.045              0</code></pre>
 </div>
-<div id="acad_plan" class="section level4">
-<h4>acad_plan</h4>
+<div id="acad_plan" class="section level3">
+<h3>acad_plan</h3>
 <p>metadata on various academic plans</p>
 <pre class="r"><code>acad_plan</code></pre>
 <pre><code>##       acad_plan                 acad_plan_desc acad_career   degree college
