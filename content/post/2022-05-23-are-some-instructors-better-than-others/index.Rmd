@@ -41,9 +41,9 @@ iss[(success)] |>
         axis.ticks.y = element_blank()) +
   coord_flip() + 
   scale_y_continuous(labels = scales::percent_format()) +
-  labs(x = "Percent of Successful Students",
-       y = "Instructors",
-       title = "Distribution of Successful Student by Instiuctor")
+  labs(y = "Percent of Successful Students",
+       x = "Instructors",
+       title = "Distribution of Successful Students by Instructor")
 ```
 
 Do we really need a statistical test to determine if some instructors perform better than others?
@@ -61,7 +61,7 @@ iss_split |>
   ggplot(aes(x = percent, fill = split)) +
   geom_density(alpha = .3) + 
   theme_classic() +
-  labs(x = "Success Rate", y = "Probability Density", fill = "Top 50%")
+  labs(y = "Success Rate", x = "Probability Density", fill = "Top 50%")
 ```
 
 If I squint real hard, it looks normal enough for a parametric test. 

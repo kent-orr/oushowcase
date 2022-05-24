@@ -1,0 +1,123 @@
+---
+title: Does teaching frequently the course improve instructor performance over time?
+author: Kent Orr
+date: '2022-05-23'
+slug: does-teaching-frequently-the-course-improve-instructor-performance-over-time
+categories: []
+tags: []
+---
+
+```{r setup, include=FALSE}
+library(data.table)
+library(ggplot2)
+source("~/Documents/oushowcase/content/scripts/clean.R")
+```
+
+## Defining the Problem
+
+We have already established that some instructors perform better than others. Now we want to answer if the number of `term_id`'s an `instructor_id_number` is associated with a `class_nbr` is related to student success rates. I will use the same merge of `course_enrollments` and `class_instructors` used to detect variation in instructor performance rates, as well as `class_inventory` to derive the number of similar courses each instructor has taught by `subject` and `catalog` number. 
+
+There are some courses in the catalog that did not show up in enrollments. Likely these courses made it to roster but were not in session. They will be removed.
+
+Some courses had every student drop or otherwise fail. They will be removed
+
+```{r}
+never_enrolled <- setdiff(class_inventory$class_nbr, course_enrollments$class_nbr)
+all_drops = course_enrollments[,.SD[all(success == FALSE)], class_nbr]$class_nbr |> unique()
+rm_nbrs <- c(never_enrolled, all_drops)
+
+course_enrollments <- course_enrollments[!class_nbr %in% rm_nbrs]
+class_inventory <- class_inventory[!class_nbr %in% rm_nbrs]
+class_instructors <- class_instructors[!class_nbr %in% rm_nbrs]
+
+sections <- class_inventory[
+            ,merge(.SD, class_instructors, 
+                       on = c("class_nbr", "instructor_id_number"))
+                ][order(term_code, semester)
+                  ][,sections_taught := .SD[,.I], 
+                    .(instructor_id_number, subject, catalog_nbr)][]
+
+instructor_success <- merge(class_instructors, on = c("term_code", "class_nbr"),
+                            course_enrollments[,.(term_code, class_nbr, official_grade,
+                            student_id_number,
+                            success)])
+
+```
+
+## Courses Taught vs. Instructor Success Rate
+
+Fortunately for us, this data set has one-horse ponies all around. Each instructor has only taught a single course section. 
+
+```{r}
+sections[,.N, sections_taught][order(N)] |>
+  ggplot(aes(x = sections_taught, y = N)) +
+  geom_point() +
+  theme_bw() +
+  labs(x = "Consecutive Section Number", y = "Instructors")
+
+sections <- sections[sections_taught <= 7]
+
+```
+
+There is a very low response rate of fewer than 14 instructors past consecutive section #7. I will remove those courses from the data. 
+
+```{r}
+sec_rates <-
+sections[,merge(.SD, instructor_success, on = c("instructor_id_number", "class_nbr"))
+][,.(student_outcomes = .N), .(instructor_id_number = instructor_id_number.x, sections_taught, success)
+           ][,percent := student_outcomes/sum(student_outcomes), 
+             .(instructor_id_number, sections_taught)
+             ][(success)]
+
+sec_rates |>
+  ggplot(aes(x = ordered(sections_taught), y = percent)) +
+  geom_boxplot() + 
+  theme_bw() + 
+  coord_cartesian(ylim = c(0, 1)) +
+  labs(x = "Sections Taught", y = "Percent of Successful Students",
+       title = "Distribution of Success Rates by Consecutive Year Course was Taught")
+  
+```
+
+```{r}
+
+sec_rates |>
+  ggplot(aes(x = sections_taught, y = percent)) +
+  geom_jitter(height = 0, width = .2) + 
+  theme_bw() + 
+  coord_cartesian(ylim = c(0, 1)) +
+  labs(x = "Sections Taught", y = "Percent of Successful Students",
+       title = "Distribution of Success Rates by Consecutive Year Course was Taught")
+
+sec_rates[sections_taught != 6] |>
+  lm(percent ~ sections_taught, data = _) -> lm_sec
+
+summary(lm_sec)
+
+copy(sec_rates)[,preds := predict(lm_sec, .SD)] |>
+  ggplot(aes(x = sections_taught, y = percent)) +
+  geom_jitter(height = 0, width = .2) + 
+  geom_line(aes(y = preds, color = "predictions"))+ 
+  theme_bw() + 
+  coord_cartesian(ylim = c(0, 1)) +
+  labs(x = "Sections Taught", y = "Percent of Successful Students",
+       title = "Distribution of Success Rates by Consecutive Year Course was Taught")
+```
+
+Linear regression shows no no evidence that the number of consecutive sections taught by a single instructor  can explain the success rates of students. This can be confirmed again visually by plotting the percent success per consecutive section per instructor. The data used to plot included only those who had 3 or more consecutive sections. 
+
+```{r}
+sec_rates[,.SD[any(sections_taught > 2)], instructor_id_number] |>
+  ggplot(aes(x = sections_taught, y = percent)) + 
+  geom_line() +
+  theme_classic() +
+  theme(axis.text.y = element_blank(),
+        strip.background = element_blank()) +
+  facet_wrap(~instructor_id_number) +
+  labs(title = "Success Rates by Instructor",
+       x = "sections taught", y = "percent success")
+
+ 
+```
+
+There is no evidence that frequently teaching a course improves student success outcomes. 

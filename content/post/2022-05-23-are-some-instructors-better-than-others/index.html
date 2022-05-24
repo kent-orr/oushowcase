@@ -27,9 +27,9 @@ tags: []
         axis.ticks.y = element_blank()) +
   coord_flip() + 
   scale_y_continuous(labels = scales::percent_format()) +
-  labs(x = &quot;Percent of Successful Students&quot;,
-       y = &quot;Instructors&quot;,
-       title = &quot;Distribution of Successful Student by Instiuctor&quot;)</code></pre>
+  labs(y = &quot;Percent of Successful Students&quot;,
+       x = &quot;Instructors&quot;,
+       title = &quot;Distribution of Successful Students by Instructor&quot;)</code></pre>
 <p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
 <p>Do we really need a statistical test to determine if some instructors perform better than others?</p>
 <p>I will merge the median success rate for each instructor to the performance ratio data and create two groups, the top 50% and bottom 50%, then use a t-test to test for a difference of means.</p>
@@ -43,7 +43,7 @@ iss_split |&gt;
   ggplot(aes(x = percent, fill = split)) +
   geom_density(alpha = .3) + 
   theme_classic() +
-  labs(x = &quot;Success Rate&quot;, y = &quot;Probability Density&quot;, fill = &quot;Top 50%&quot;)</code></pre>
+  labs(y = &quot;Success Rate&quot;, x = &quot;Probability Density&quot;, fill = &quot;Top 50%&quot;)</code></pre>
 <p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
 <p>If I squint real hard, it looks normal enough for a parametric test.</p>
 <pre class="r"><code>t.test(iss_split[(split)]$percent, iss_split[!(split)]$percent)</code></pre>
