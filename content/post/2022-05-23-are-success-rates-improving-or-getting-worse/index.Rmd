@@ -1,5 +1,5 @@
 ---
-title: Are Success Rates Improving or Getting Worse
+title: Are success rates improving or getting worse
 author: Kent Orr
 date: '2022-05-23'
 slug: are-success-rates-improving-or-getting-worse
