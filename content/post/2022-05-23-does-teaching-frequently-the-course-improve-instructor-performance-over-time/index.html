@@ -1,5 +1,5 @@
 ---
-title: Does teaching frequently the course improve instructor performance over time?
+title: Does frequently teaching the course improve instructor performance over time?
 author: Kent Orr
 date: '2022-05-23'
 slug: does-teaching-frequently-the-course-improve-instructor-performance-over-time
@@ -103,7 +103,7 @@ summary(lm_sec)</code></pre>
 <p>Linear regression shows no no evidence that the number of consecutive sections taught by a single instructor can explain the success rates of students. This can be confirmed again visually by plotting the percent success per consecutive section per instructor. The data used to plot included only those who had 3 or more consecutive sections.</p>
 <pre class="r"><code>sec_rates[,.SD[any(sections_taught &gt; 2)], instructor_id_number] |&gt;
   ggplot(aes(x = sections_taught, y = percent)) + 
-  geom_line() +
+  geom_line() + 
   theme_classic() +
   theme(axis.text.y = element_blank(),
         strip.background = element_blank()) +

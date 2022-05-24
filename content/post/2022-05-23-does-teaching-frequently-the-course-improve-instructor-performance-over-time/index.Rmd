@@ -1,5 +1,5 @@
 ---
-title: Does teaching frequently the course improve instructor performance over time?
+title: Does frequently teaching the course improve instructor performance over time?
 author: Kent Orr
 date: '2022-05-23'
 slug: does-teaching-frequently-the-course-improve-instructor-performance-over-time
@@ -109,7 +109,7 @@ Linear regression shows no no evidence that the number of consecutive sections t
 ```{r}
 sec_rates[,.SD[any(sections_taught > 2)], instructor_id_number] |>
   ggplot(aes(x = sections_taught, y = percent)) + 
-  geom_line() +
+  geom_line() + 
   theme_classic() +
   theme(axis.text.y = element_blank(),
         strip.background = element_blank()) +
