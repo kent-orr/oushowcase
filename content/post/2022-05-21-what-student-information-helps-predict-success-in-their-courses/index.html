@@ -29,10 +29,10 @@ The nitty gritty of how the data was joined and cleaned
 <p>The resulting data set gives the first obstacle, handling <code>NA</code> values for numeric variables. On the one hand a scalar response lends itself to an elegant set of predictive methods, but at the same time not having a high school GPA entry is likely a significant indicator of academic success. The same goes for whether a student took the ACT or not. Even worse, the percentage of respondents missing one or the other are close to a quarter or a third.</p>
 <pre class="r"><code>lapply(cs[,.(act_score, hs_gpa_entry)], \(x) {length(x)/length(x[which(is.na(x))])})</code></pre>
 <pre><code>## $act_score
-## [1] 26.125
+## [1] 24.8786
 ## 
 ## $hs_gpa_entry
-## [1] 33.31884</code></pre>
+## [1] 32.27362</code></pre>
 <p>For each variable we will answer two questions that help us decide what to do next.</p>
 <ol style="list-style-type: decimal">
 <li>Is non-response predictive of course success?<br />
@@ -58,7 +58,7 @@ The nitty gritty of how the data was joined and cleaned
 ##  Pearson&#39;s Chi-squared test with Yates&#39; continuity correction
 ## 
 ## data:  table(copy(cs)[, .(act_na = is.na(act_score), success)])
-## X-squared = 17.788, df = 1, p-value = 2.469e-05</code></pre>
+## X-squared = 25.256, df = 1, p-value = 5.021e-07</code></pre>
 <p>We can see that the distribution of successful courses among students who have an ACT score is significantly different from those who did not report an ACT score. In fact, ACT reporting students are ~10% more likely to succeed.</p>
 <p>We will now look at the scalar portion of the variable by plotting the distribution of ACT scores against the official grades earned.</p>
 <pre class="r"><code>copy(cs) |&gt;
@@ -126,30 +126,30 @@ summary(m1)</code></pre>
 ## 
 ## Deviance Residuals: 
 ##     Min       1Q   Median       3Q      Max  
-## -2.1758   0.4437   0.6105   0.7812   1.1951  
+## -1.6830  -1.3553   0.8240   0.9391   1.3794  
 ## 
 ## Coefficients:
-##                                Estimate Std. Error z value Pr(&gt;|z|)    
-## (Intercept)                     0.91743    0.12320   7.447 9.57e-14 ***
-## act_score_factor(0,20]          0.15679    0.18300   0.857  0.39157    
-## act_score_factor(20,23]         0.24677    0.18168   1.358  0.17438    
-## act_score_factor(23,26]         0.01324    0.18362   0.072  0.94253    
-## act_score_factor(26,36]        -0.08667    0.18796  -0.461  0.64473    
-## hs_gpa_entry_factor(0.21,3.06] -0.25929    0.19736  -1.314  0.18891    
-## hs_gpa_entry_factor(3.06,3.42]  0.10000    0.19790   0.505  0.61335    
-## hs_gpa_entry_factor(3.42,3.76]  0.54155    0.19961   2.713  0.00667 ** 
-## hs_gpa_entry_factor(3.76,553]   1.10434    0.20298   5.441 5.31e-08 ***
-## hardship_score1                -0.34949    0.06815  -5.128 2.93e-07 ***
-## hardship_score2                -0.28039    0.06907  -4.059 4.92e-05 ***
-## hardship_score3                -0.61313    0.06405  -9.573  &lt; 2e-16 ***
+##                                 Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)                     0.267987   0.101069   2.652 0.008013 ** 
+## act_score_factor(0,20]          0.479640   0.145058   3.307 0.000945 ***
+## act_score_factor(20,23]         0.454296   0.143064   3.175 0.001496 ** 
+## act_score_factor(23,26]         0.138969   0.143963   0.965 0.334391    
+## act_score_factor(26,36]        -0.235107   0.145834  -1.612 0.106928    
+## hs_gpa_entry_factor(0.21,3.06]  0.005787   0.160164   0.036 0.971180    
+## hs_gpa_entry_factor(3.06,3.42]  0.183397   0.159372   1.151 0.249837    
+## hs_gpa_entry_factor(3.42,3.76]  0.376187   0.159420   2.360 0.018288 *  
+## hs_gpa_entry_factor(3.76,553]   0.390841   0.159927   2.444 0.014531 *  
+## hardship_score1                -0.281806   0.055104  -5.114 3.15e-07 ***
+## hardship_score2                -0.204608   0.056637  -3.613 0.000303 ***
+## hardship_score3                -0.502012   0.053537  -9.377  &lt; 2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## (Dispersion parameter for binomial family taken to be 1)
 ## 
-##     Null deviance: 12002  on 11034  degrees of freedom
-## Residual deviance: 11493  on 11023  degrees of freedom
-## AIC: 11517
+##     Null deviance: 17041  on 13115  degrees of freedom
+## Residual deviance: 16745  on 13104  degrees of freedom
+## AIC: 16769
 ## 
 ## Number of Fisher Scoring iterations: 4</code></pre>
 <pre class="r"><code>?anova.glm
@@ -164,10 +164,10 @@ anova(m1, test = &quot;Chisq&quot;)</code></pre>
 ## 
 ## 
 ##                     Df Deviance Resid. Df Resid. Dev  Pr(&gt;Chi)    
-## NULL                                11034      12002              
-## act_score_factor     4    45.20     11030      11957 3.611e-09 ***
-## hs_gpa_entry_factor  4   363.44     11026      11594 &lt; 2.2e-16 ***
-## hardship_score       3   100.24     11023      11493 &lt; 2.2e-16 ***
+## NULL                                13115      17040              
+## act_score_factor     4  141.166     13111      16899 &lt; 2.2e-16 ***
+## hs_gpa_entry_factor  4   56.376     13107      16843 1.672e-11 ***
+## hardship_score       3   98.358     13104      16745 &lt; 2.2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
 <pre class="r"><code>test_res &lt;- predict(m1, cs_test, type = &quot;response&quot;)
@@ -180,26 +180,26 @@ caret::confusionMatrix(test_res |&gt; as.factor(),
 ## 
 ##           Reference
 ## Prediction    0    1
-##          0    4    1
-##          1  637 2117
+##          0   66   47
+##          1 1119 2047
 ##                                           
-##                Accuracy : 0.7688          
-##                  95% CI : (0.7526, 0.7844)
-##     No Information Rate : 0.7677          
-##     P-Value [Acc &gt; NIR] : 0.4567          
+##                Accuracy : 0.6444          
+##                  95% CI : (0.6277, 0.6608)
+##     No Information Rate : 0.6386          
+##     P-Value [Acc &gt; NIR] : 0.2509          
 ##                                           
-##                   Kappa : 0.0088          
+##                   Kappa : 0.0414          
 ##                                           
 ##  Mcnemar&#39;s Test P-Value : &lt;2e-16          
 ##                                           
-##             Sensitivity : 0.006240        
-##             Specificity : 0.999528        
-##          Pos Pred Value : 0.800000        
-##          Neg Pred Value : 0.768700        
-##              Prevalence : 0.232331        
-##          Detection Rate : 0.001450        
-##    Detection Prevalence : 0.001812        
-##       Balanced Accuracy : 0.502884        
+##             Sensitivity : 0.05570         
+##             Specificity : 0.97755         
+##          Pos Pred Value : 0.58407         
+##          Neg Pred Value : 0.64656         
+##              Prevalence : 0.36139         
+##          Detection Rate : 0.02013         
+##    Detection Prevalence : 0.03446         
+##       Balanced Accuracy : 0.51663         
 ##                                           
 ##        &#39;Positive&#39; Class : 0               
 ## </code></pre>
