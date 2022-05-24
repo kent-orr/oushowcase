@@ -11,4 +11,60 @@ tags: []
 
 <div id="defining-the-problem" class="section level2">
 <h2>Defining the Problem</h2>
+<p>Do some instructors have significantly higher success rates among the students in their courses than others? We will merge the <code>course_enrollments</code> with <code>class_instructors</code>. From there we will determine success ratios per instructor and compare.</p>
+<pre class="r"><code>is &lt;- merge(course_enrollments[,.(term_code, class_nbr, 
+                                  student_id_number, official_grade,
+                                  success)],
+            class_instructors, on = c(&quot;term_code&quot;, &quot;class_nbr&quot;))</code></pre>
+<pre class="r"><code>iss &lt;- is[,.N, .(instructor_id_number, term_code, class_nbr, success)
+   ][,percent := N/sum(N), .(instructor_id_number, term_code, class_nbr)
+     ][]</code></pre>
+<pre class="r"><code>iss[(success)] |&gt;
+  ggplot(aes(x = reorder(as.factor(instructor_id_number), percent), y = percent)) + 
+  geom_boxplot() + 
+  theme_bw() + 
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  coord_flip() + 
+  scale_y_continuous(labels = scales::percent_format()) +
+  labs(x = &quot;Percent of Successful Students&quot;,
+       y = &quot;Instructors&quot;,
+       title = &quot;Distribution of Successful Student by Instiuctor&quot;)</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p>Do we really need a statistical test to determine if some instructors perform better than others?</p>
+<p>I will merge the median success rate for each instructor to the performance ratio data and create two groups, the top 50% and bottom 50%, then use a t-test to test for a difference of means.</p>
+<pre class="r"><code>iss[(success)][,.(md = median(percent)), instructor_id_number
+               ][order(md)
+                 ][,split := .I%/%(.N/2), .I
+                   ][,.(instructor_id_number, split = split &gt; 0)] |&gt;
+  merge(iss[(success)], y = _) -&gt; iss_split
+
+iss_split |&gt;
+  ggplot(aes(x = percent, fill = split)) +
+  geom_density(alpha = .3) + 
+  theme_classic() +
+  labs(x = &quot;Success Rate&quot;, y = &quot;Probability Density&quot;, fill = &quot;Top 50%&quot;)</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p>If I squint real hard, it looks normal enough for a parametric test.</p>
+<pre class="r"><code>t.test(iss_split[(split)]$percent, iss_split[!(split)]$percent)</code></pre>
+<pre><code>## 
+##  Welch Two Sample t-test
+## 
+## data:  iss_split[(split)]$percent and iss_split[!(split)]$percent
+## t = 17.941, df = 374.72, p-value &lt; 2.2e-16
+## alternative hypothesis: true difference in means is not equal to 0
+## 95 percent confidence interval:
+##  0.1705378 0.2125202
+## sample estimates:
+## mean of x mean of y 
+## 0.8930843 0.7015553</code></pre>
+<p>But to cover bases I’ll apply</p>
+<pre class="r"><code>wilcox.test(iss_split[(split)]$percent, iss_split[!(split)]$percent)</code></pre>
+<pre><code>## 
+##  Wilcoxon rank sum test with continuity correction
+## 
+## data:  iss_split[(split)]$percent and iss_split[!(split)]$percent
+## W = 60810, p-value &lt; 2.2e-16
+## alternative hypothesis: true location shift is not equal to 0</code></pre>
+<p>There is strong evidence that some instructors’ courses have significantly higher success rates than others.</p>
 </div>

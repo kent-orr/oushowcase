@@ -8,8 +8,72 @@ tags: []
 ---
 
 ```{r setup, include=FALSE}
+library(data.table)
+library(ggplot2)
 source("~/Documents/oushowcase/content/scripts/clean.R")
 ```
 
 ## Defining the Problem
 
+Do some instructors have significantly higher success rates among the students in their courses than others? We will merge the `course_enrollments` with `class_instructors`. From there we will determine success ratios per instructor and compare. 
+
+```{r}
+is <- merge(course_enrollments[,.(term_code, class_nbr, 
+                                  student_id_number, official_grade,
+                                  success)],
+            class_instructors, on = c("term_code", "class_nbr"))
+```
+
+
+
+```{r}
+iss <- is[,.N, .(instructor_id_number, term_code, class_nbr, success)
+   ][,percent := N/sum(N), .(instructor_id_number, term_code, class_nbr)
+     ][]
+```
+
+```{r}
+iss[(success)] |>
+  ggplot(aes(x = reorder(as.factor(instructor_id_number), percent), y = percent)) + 
+  geom_boxplot() + 
+  theme_bw() + 
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  coord_flip() + 
+  scale_y_continuous(labels = scales::percent_format()) +
+  labs(x = "Percent of Successful Students",
+       y = "Instructors",
+       title = "Distribution of Successful Student by Instiuctor")
+```
+
+Do we really need a statistical test to determine if some instructors perform better than others?
+
+I will merge the median success rate for each instructor to the performance ratio data and create two groups, the top 50% and bottom 50%, then use a t-test to test for a difference of means. 
+
+```{r}
+iss[(success)][,.(md = median(percent)), instructor_id_number
+               ][order(md)
+                 ][,split := .I%/%(.N/2), .I
+                   ][,.(instructor_id_number, split = split > 0)] |>
+  merge(iss[(success)], y = _) -> iss_split
+
+iss_split |>
+  ggplot(aes(x = percent, fill = split)) +
+  geom_density(alpha = .3) + 
+  theme_classic() +
+  labs(x = "Success Rate", y = "Probability Density", fill = "Top 50%")
+```
+
+If I squint real hard, it looks normal enough for a parametric test. 
+
+```{r}
+t.test(iss_split[(split)]$percent, iss_split[!(split)]$percent)
+```
+
+But to cover bases I'll apply
+
+```{r}
+wilcox.test(iss_split[(split)]$percent, iss_split[!(split)]$percent)
+```
+
+There is strong evidence that some instructors' courses have significantly higher success rates than others. 
