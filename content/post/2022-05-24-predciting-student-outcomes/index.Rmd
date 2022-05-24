@@ -68,6 +68,10 @@ Accuracy of .76 isn't bad, though the Kappa is only middling. Let's see if a Ran
 
 ```{r}
 
+balance = concat_tr[,.N, success]$N[2] - concat_tr[,.N, success]$N[1]
+set.seed(100)
+concat_tr <- rbind(concat_tr, concat_tr[(success)][sample(.N, balance, replace = T)])
+
 cl <- parallel::makeForkCluster(nnodes = parallel::detectCores())
 doParallel::registerDoParallel(cl)
 
@@ -77,7 +81,6 @@ md_rf <- caret::train(y = concat_tr$success |> as.factor(),
                                        hs_gpa_entry_factor, hs_gpa_entry_resp,
                                        acad_career, college, 
                                        subject, class_description)],
-                      preProcess = "BoxCox",
              model = "rf")
 
 parallel::stopCluster(cl)

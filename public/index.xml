@@ -6,7 +6,18 @@
     <description>Recent content on A Hugo website</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Mon, 23 May 2022 00:00:00 +0000</lastBuildDate><atom:link href="/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Tue, 24 May 2022 00:00:00 +0000</lastBuildDate><atom:link href="/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Predciting Student Outcomes</title>
+      <link>/2022/05/24/predciting-student-outcomes/</link>
+      <pubDate>Tue, 24 May 2022 00:00:00 +0000</pubDate>
+      
+      <guid>/2022/05/24/predciting-student-outcomes/</guid>
+      <description>We’ve looked at a few facets of predicting student success. This post will combine what we have learned so far and bring in new imputed variables to help predict the success of a student.
+To explore, I want to bring together as many pieces of data as possible. I’ll be linking the course_enrollments, student_details, and acad_plan data sets
+concat &amp;lt;- course_enrollments[,merge(.SD, student_details, all.x = T, by = nm_intersect(course_enrollments, student_details))] |&amp;gt; merge(x = _, acad_plan, by.</description>
+    </item>
+    
     <item>
       <title>Are some instructors better than others?</title>
       <link>/2022/05/23/are-some-instructors-better-than-others/</link>
@@ -18,7 +29,7 @@ is &amp;lt;- merge(course_enrollments[,.(term_code, class_nbr, student_id_number
     </item>
     
     <item>
-      <title>Are Success Rates Improving or Getting Worse</title>
+      <title>Are success rates improving or getting worse</title>
       <link>/2022/05/23/are-success-rates-improving-or-getting-worse/</link>
       <pubDate>Mon, 23 May 2022 00:00:00 +0000</pubDate>
       
@@ -28,7 +39,7 @@ copy(course_enrollments)[,.N,.(term_code, success)][,percent := N/sum(N), term_c
     </item>
     
     <item>
-      <title>Does teaching frequently the course improve instructor performance over time?</title>
+      <title>Does frequently teaching the course improve instructor performance over time?</title>
       <link>/2022/05/23/does-teaching-frequently-the-course-improve-instructor-performance-over-time/</link>
       <pubDate>Mon, 23 May 2022 00:00:00 +0000</pubDate>
       
@@ -47,7 +58,7 @@ library(data.table) library(ggplot2) for (i in list.files(&amp;quot;/home/kent/D
     </item>
     
     <item>
-      <title>What is the Overall Success Rate?</title>
+      <title>What is the overall success rate?</title>
       <link>/2022/05/21/what-is-the-overall-success-rate/</link>
       <pubDate>Sat, 21 May 2022 00:00:00 +0000</pubDate>
       
