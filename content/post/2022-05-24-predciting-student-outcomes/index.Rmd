@@ -1,0 +1,95 @@
+---
+title: Predciting Student Outcomes
+author: Kent Orr
+date: '2022-05-24'
+slug: predciting-student-outcomes
+categories: []
+tags: []
+---
+
+We've looked at a few facets of predicting student success. This post will combine what we have learned so far and bring in new imputed variables to help predict the success of a student. 
+
+```{r, include=FALSE}
+library(data.table)
+library(ggplot2)
+source("~/Documents/oushowcase/content/scripts/clean.R")
+
+nm_intersect <- function(x, y) {
+  intersect(names(x), names(y))
+}
+```
+
+To explore, I want to bring together as many pieces of data as possible. I'll be linking the `course_enrollments`, `student_details`, and `acad_plan` data sets
+
+```{r}
+concat <-
+course_enrollments[,merge(.SD, student_details, all.x = T, by = nm_intersect(course_enrollments, student_details))] |>
+  merge(x = _, acad_plan, by.x = "acad_plan", by.y = "acad_plan", all.x = TRUE) |> 
+  merge(x = _, y = class_inventory, by = c("class_nbr", "term_code"))
+
+lapply(seq_along(names(concat)), \(x) {
+  nm = names(concat)[x]
+  data.table(varname = nm,
+             typeof = typeof(concat[[x]]),
+             ln_unique = length(unique(concat[[x]])),
+             pct_na = length(concat[[x]][which(is.na(concat[[x]]))])/length(concat[[x]])
+             )
+}) |> rbindlist() |>
+  kableExtra::kable() |>
+  kableExtra::kable_styling()
+```
+
+I'll use the above table to guide me to which variables are nominal (character with large n of unique), which variables have NA's and how I might deal with them, and for a general understanding of what may be related, i.e. department code and subject, which could lead toa rank deficient fit. 
+
+
+```{r}
+set.seed(100)
+concat_tr <- concat[sample(.N, .8*.N)]
+concat_te <- concat[!concat_tr, on = names(concat_tr)]
+
+lm_success <- glm(success ~ term_code + hours_carried + 
+      act_score_factor + hs_gpa_entry_factor +
+      acad_career + # degree + # Degree may overfit ============ !!!
+      college + subject,
+    data = concat, family = binomial())
+
+summary(lm_success)
+
+preds = predict(lm_success, concat_te, type = "response")
+preds[which(preds < .5)] <- 0
+preds[which(preds >= .5)] <- 1
+
+
+caret::confusionMatrix(preds |> as.factor(), 
+                       concat_te$success |> as.integer() |> as.factor())
+```
+
+Accuracy of .76 isn't bad, though the Kappa is only middling. Let's see if a Random Forest algorithm can improve the scores. 
+
+```{r}
+
+cl <- parallel::makeForkCluster(nnodes = parallel::detectCores())
+doParallel::registerDoParallel(cl)
+
+md_rf <- caret::train(y = concat_tr$success |> as.factor(),
+                      x = concat_tr[,.(term_code, hours_carried, 
+                                       act_score_factor, act_score_resp,
+                                       hs_gpa_entry_factor, hs_gpa_entry_resp,
+                                       acad_career, college, 
+                                       subject, class_description)],
+                      preProcess = "BoxCox",
+             model = "rf")
+
+parallel::stopCluster(cl)
+
+preds <- predict(md_rf$finalModel, concat_te[,.(term_code, hours_carried, 
+                                       act_score_factor, act_score_resp,
+                                       hs_gpa_entry_factor, hs_gpa_entry_resp,
+                                       acad_career, college, 
+                                       subject, class_description)],
+                 type = "response")
+
+caret::confusionMatrix(preds |> as.factor(), 
+                       concat_te$success |> as.factor())
+```
+
