@@ -520,11 +520,15 @@ caret::confusionMatrix(preds |&gt; as.factor(),
 ##        &#39;Positive&#39; Class : 0               
 ## </code></pre>
 <p>Accuracy of .76 isn’t bad, though the Kappa is only middling. Let’s see if a Random Forest algorithm can improve the scores.</p>
-<pre class="r"><code>balance = concat_tr[,.N, success]$N[2] - concat_tr[,.N, success]$N[1]
+<pre class="r"><code>balance = concat_tr[,.N, success]$N[2] - concat_tr[,.N, success]$N[1] 
 set.seed(100)
-concat_tr &lt;- rbind(concat_tr, concat_tr[(success)][sample(.N, balance, replace = T)])
+concat_tr &lt;- rbind(concat_tr, concat_tr[!(success)][sample(.N, balance, replace = T)])
 
-cl &lt;- parallel::makeForkCluster(nnodes = parallel::detectCores()-1)
+concat_tr[,.N, success]</code></pre>
+<pre><code>##    success    N
+## 1:   FALSE 8560
+## 2:    TRUE 8560</code></pre>
+<pre class="r"><code>cl &lt;- parallel::makeForkCluster(nnodes = parallel::detectCores()-1)
 doParallel::registerDoParallel(cl)
 
 md_rf &lt;- caret::train(y = concat_tr$success |&gt; as.factor(),
@@ -550,26 +554,26 @@ caret::confusionMatrix(preds |&gt; as.factor(),
 ## 
 ##           Reference
 ## Prediction FALSE TRUE
-##      FALSE   724  351
-##      TRUE    415 1834
+##      FALSE   805  623
+##      TRUE    334 1562
 ##                                           
-##                Accuracy : 0.7696          
-##                  95% CI : (0.7549, 0.7838)
+##                Accuracy : 0.7121          
+##                  95% CI : (0.6964, 0.7274)
 ##     No Information Rate : 0.6573          
-##     P-Value [Acc &gt; NIR] : &lt; 2e-16         
+##     P-Value [Acc &gt; NIR] : 8.711e-12       
 ##                                           
-##                   Kappa : 0.4815          
+##                   Kappa : 0.3975          
 ##                                           
-##  Mcnemar&#39;s Test P-Value : 0.02283         
+##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
 ##                                           
-##             Sensitivity : 0.6356          
-##             Specificity : 0.8394          
-##          Pos Pred Value : 0.6735          
-##          Neg Pred Value : 0.8155          
+##             Sensitivity : 0.7068          
+##             Specificity : 0.7149          
+##          Pos Pred Value : 0.5637          
+##          Neg Pred Value : 0.8238          
 ##              Prevalence : 0.3427          
-##          Detection Rate : 0.2178          
-##    Detection Prevalence : 0.3234          
-##       Balanced Accuracy : 0.7375          
+##          Detection Rate : 0.2422          
+##    Detection Prevalence : 0.4296          
+##       Balanced Accuracy : 0.7108          
 ##                                           
 ##        &#39;Positive&#39; Class : FALSE           
 ## </code></pre>

@@ -9,6 +9,7 @@ tags: []
 
 ```{r setup, include=FALSE}
 source("~/Documents/oushowcase/content/scripts/clean.R")
+never_enrolled <- setdiff(class_inventory$class_nbr, course_enrollments$class_nbr) 
 ```
 
 ## Defining the Problem

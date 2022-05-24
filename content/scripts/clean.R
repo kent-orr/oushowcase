@@ -51,3 +51,11 @@ student_details$hs_gpa_entry_factor[which(is.na(student_details$hs_gpa_entry))] 
 student_details$hs_gpa_entry_factor <- student_details$hs_gpa_entry_factor |> 
   factor(levels = c("No Score", unique(student_details$hs_gpa_entry_factor) |> 
                       sort() |> {\(x) x[which(x != "No Score")]}()))
+
+never_enrolled <- setdiff(class_inventory$class_nbr, course_enrollments$class_nbr)
+all_drops = course_enrollments[,.SD[all(success == FALSE)], class_nbr]$class_nbr |> unique()
+rm_nbrs <- c(never_enrolled, all_drops)
+
+# course_enrollments <- course_enrollments[!class_nbr %in% rm_nbrs]
+# class_instructors <- class_instructors[!class_nbr %in% rm_nbrs]
+# class_inventory <- class_inventory[!class_nbr %in% rm_nbrs]

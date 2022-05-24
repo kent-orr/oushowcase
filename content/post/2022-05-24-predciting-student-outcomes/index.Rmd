@@ -68,9 +68,11 @@ Accuracy of .76 isn't bad, though the Kappa is only middling. Let's see if a Ran
 
 ```{r}
 
-balance = concat_tr[,.N, success]$N[2] - concat_tr[,.N, success]$N[1]
+balance = concat_tr[,.N, success]$N[2] - concat_tr[,.N, success]$N[1] 
 set.seed(100)
-concat_tr <- rbind(concat_tr, concat_tr[(success)][sample(.N, balance, replace = T)])
+concat_tr <- rbind(concat_tr, concat_tr[!(success)][sample(.N, balance, replace = T)])
+
+concat_tr[,.N, success]
 
 cl <- parallel::makeForkCluster(nnodes = parallel::detectCores()-1)
 doParallel::registerDoParallel(cl)

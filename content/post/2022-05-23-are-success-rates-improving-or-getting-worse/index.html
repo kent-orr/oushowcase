@@ -25,7 +25,7 @@ tags: []
 ##  Pearson&#39;s Chi-squared test
 ## 
 ## data:  table(copy(course_enrollments)[, .(term_code, success)])
-## X-squared = 34.986, df = 5, p-value = 1.514e-06</code></pre>
+## X-squared = 62.296, df = 5, p-value = 4.072e-12</code></pre>
 <p>There is a significant difference between success rates between terms. Assuming the term codes are sequential, can we discern a specific pattern of increasing or decreasing from the success rates? To answer this question, I will use a simple linear regression model built on the ratio of successful students per term, and judge goodness of fit based on <span class="math inline">\(R^2\)</span>, the test statistic / p. value, and plotting the residuals to seek a pattern in errors.</p>
 <pre class="r"><code>lm_grow &lt;- 
 copy(course_enrollments)[,.N,.(term_code, success)][,percent := N/sum(N)] |&gt;
@@ -39,19 +39,19 @@ lm_grow |&gt; summary()</code></pre>
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -207.05 -102.82   -7.16   62.69  350.37 
+## -203.12 -108.39  -25.49   61.92  385.55 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)  1280.38     124.03  10.323 2.74e-06 ***
-## term_code     -88.59      29.17  -3.037   0.0141 *  
-## successTRUE   791.83      99.62   7.948 2.33e-05 ***
+## (Intercept)   797.63     129.37   6.165 0.000166 ***
+## term_code     -74.51      30.42  -2.449 0.036803 *  
+## successTRUE  1225.33     103.92  11.792 8.94e-07 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 172.6 on 9 degrees of freedom
-## Multiple R-squared:  0.8894, Adjusted R-squared:  0.8649 
-## F-statistic:  36.2 on 2 and 9 DF,  p-value: 4.969e-05</code></pre>
+## Residual standard error: 180 on 9 degrees of freedom
+## Multiple R-squared:  0.9416, Adjusted R-squared:  0.9286 
+## F-statistic: 72.52 on 2 and 9 DF,  p-value: 2.817e-06</code></pre>
 <pre class="r"><code>lm_grow$residuals |&gt; plot()</code></pre>
 <p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
 <pre class="r"><code>copy(course_enrollments)[,.N,.(term_code, success)][,preds := predict(lm_grow, .SD)] |&gt;
@@ -72,19 +72,19 @@ lm_grow |&gt; summary()</code></pre>
 ##     .N, .(term_code, success)][, `:=`(percent, N/sum(N)), term_code][(success)])
 ## 
 ## Residuals:
-##          1          2          3          4          5          6 
-##  0.0206999 -0.0003973  0.0196472 -0.0058983 -0.0314505 -0.0026010 
+##         1         2         3         4         5         6 
+##  0.035134  0.002564  0.005659 -0.036908 -0.020797  0.014348 
 ## 
 ## Coefficients:
 ##              Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)  0.665999   0.019996  33.307 4.85e-06 ***
-## term_code   -0.006431   0.005134  -1.252    0.279    
+## (Intercept)  0.790016   0.026632  29.664 7.69e-06 ***
+## term_code   -0.007350   0.006839  -1.075    0.343    
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 0.02148 on 4 degrees of freedom
-## Multiple R-squared:  0.2817, Adjusted R-squared:  0.1021 
-## F-statistic: 1.569 on 1 and 4 DF,  p-value: 0.2786</code></pre>
+## Residual standard error: 0.02861 on 4 degrees of freedom
+## Multiple R-squared:  0.2241, Adjusted R-squared:  0.03012 
+## F-statistic: 1.155 on 1 and 4 DF,  p-value: 0.343</code></pre>
 <pre class="r"><code>lm_grow$residuals |&gt; plot()</code></pre>
 <p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
 <pre class="r"><code>copy(course_enrollments)[,.N,.(term_code, success)
