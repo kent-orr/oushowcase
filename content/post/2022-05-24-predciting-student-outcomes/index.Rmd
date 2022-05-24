@@ -72,7 +72,7 @@ balance = concat_tr[,.N, success]$N[2] - concat_tr[,.N, success]$N[1]
 set.seed(100)
 concat_tr <- rbind(concat_tr, concat_tr[(success)][sample(.N, balance, replace = T)])
 
-cl <- parallel::makeForkCluster(nnodes = parallel::detectCores())
+cl <- parallel::makeForkCluster(nnodes = parallel::detectCores()-1)
 doParallel::registerDoParallel(cl)
 
 md_rf <- caret::train(y = concat_tr$success |> as.factor(),

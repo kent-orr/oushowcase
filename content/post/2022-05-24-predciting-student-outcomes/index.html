@@ -524,7 +524,7 @@ caret::confusionMatrix(preds |&gt; as.factor(),
 set.seed(100)
 concat_tr &lt;- rbind(concat_tr, concat_tr[(success)][sample(.N, balance, replace = T)])
 
-cl &lt;- parallel::makeForkCluster(nnodes = parallel::detectCores())
+cl &lt;- parallel::makeForkCluster(nnodes = parallel::detectCores()-1)
 doParallel::registerDoParallel(cl)
 
 md_rf &lt;- caret::train(y = concat_tr$success |&gt; as.factor(),
