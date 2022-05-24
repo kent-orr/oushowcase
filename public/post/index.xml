@@ -6,7 +6,36 @@
     <description>Recent content in Posts on A Hugo website</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sat, 21 May 2022 00:00:00 +0000</lastBuildDate><atom:link href="/post/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Mon, 23 May 2022 00:00:00 +0000</lastBuildDate><atom:link href="/post/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Are some instructors better than others?</title>
+      <link>/2022/05/23/are-some-instructors-better-than-others/</link>
+      <pubDate>Mon, 23 May 2022 00:00:00 +0000</pubDate>
+      
+      <guid>/2022/05/23/are-some-instructors-better-than-others/</guid>
+      <description>Defining the Problem Do some instructors have significantly higher success rates among the students in their courses than others? We will merge the course_enrollments with class_instructors. From there we will determine success ratios per instructor and compare.
+is &amp;lt;- merge(course_enrollments[,.(term_code, class_nbr, student_id_number, official_grade, success)], class_instructors, on = c(&amp;quot;term_code&amp;quot;, &amp;quot;class_nbr&amp;quot;)) iss &amp;lt;- is[,.N, .(instructor_id_number, term_code, class_nbr, success) ][,percent := N/sum(N), .(instructor_id_number, term_code, class_nbr) ][] iss[(success)] |&amp;gt; ggplot(aes(x = reorder(as.factor(instructor_id_number), percent), y = percent)) + geom_boxplot() + theme_bw() + theme(axis.</description>
+    </item>
+    
+    <item>
+      <title>Are Success Rates Improving or Getting Worse</title>
+      <link>/2022/05/23/are-success-rates-improving-or-getting-worse/</link>
+      <pubDate>Mon, 23 May 2022 00:00:00 +0000</pubDate>
+      
+      <guid>/2022/05/23/are-success-rates-improving-or-getting-worse/</guid>
+      <description>Defining the Problem Over time term_code, are success rates improving or not? Since we’re working with frequencies and ratios we can use a Chi-squares to determine if there is any change between success rates and terms.
+copy(course_enrollments)[,.N,.(term_code, success)][,percent := N/sum(N), term_code] |&amp;gt; ggplot(aes(x = term_code, y = percent, fill = success)) + geom_col() + theme_classic() + scale_fill_viridis_d() copy(course_enrollments)[,.(term_code, success)] |&amp;gt; table() |&amp;gt; chisq.test() ## ## Pearson&amp;#39;s Chi-squared test ## ## data: table(copy(course_enrollments)[, .</description>
+    </item>
+    
+    <item>
+      <title>Does teaching frequently the course improve instructor performance over time?</title>
+      <link>/2022/05/23/does-teaching-frequently-the-course-improve-instructor-performance-over-time/</link>
+      <pubDate>Mon, 23 May 2022 00:00:00 +0000</pubDate>
+      
+      <guid>/2022/05/23/does-teaching-frequently-the-course-improve-instructor-performance-over-time/</guid>
+      <description>Defining the Problem We have already established that some instructors perform better than others. Now we want to answer if the number of term_id’s an instructor_id_number is associated with a class_nbr is related to student success rates. I will use the same merge of course_enrollments and class_instructors used to detect variation in instructor performance rates, as well as class_inventory to derive the number of similar courses each instructor has taught by subject and catalog number.</description>
+    </item>
+    
     <item>
       <title>Getting Started - Data Cleaning</title>
       <link>/2022/05/21/getting-started-data-cleaning/</link>

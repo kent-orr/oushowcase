@@ -33,12 +33,21 @@ course_enrollments[,success := grepl("A|B|C(?!\\-)", official_grade, perl = T) &
 # create ordered (somewhat) factor for grades
 course_enrollments$official_grade <- ordered(course_enrollments$official_grade, levels = c("A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", 
                                                                                            "DROP", "F", "FN", "FS", "I", "NC", "S", "W", "WF", "WN", "WP"))
-student_details$act_score |> quantile(seq(0, 1, .25), na.rm = T) -> x
-student_details$act_score <- student_details$act_score |> cut(x) |> as.character()
-student_details$act_score[which(is.na(student_details$act_score))] <- "No Score"
-student_details$act_score <- student_details$act_score |> factor(levels = c("No Score", "(13,21]",  "(21,23]",  "(23,26]",  "(26,35]"))
 
+student_details[,hardship_score := as.factor(hardship_score)]
+
+student_details[,act_score_resp := !is.na(act_score)]
+student_details$act_score |> quantile(seq(0, 1, .25), na.rm = T) -> x
+student_details$act_score_factor <- student_details$act_score |> cut(x, include.lowest = F) |> as.character()
+student_details$act_score_factor[which(is.na(student_details$act_score_factor))] <- "No Score"
+student_details$act_score_factor <- student_details$act_score_factor |> 
+  factor(levels = c("No Score", unique(student_details$act_score_factor) |> 
+                      sort() |> {\(x) x[which(x != "No Score")]}()))
+
+student_details[,hs_gpa_entry_resp := !is.na(hs_gpa_entry)]
 student_details$hs_gpa_entry |> quantile(seq(0, 1, .25), na.rm = T) -> x
-student_details$hs_gpa_entry <- student_details$hs_gpa_entry |> cut(x) |> as.character()
-student_details$hs_gpa_entry[which(is.na(student_details$hs_gpa_entry))] <- "No Score"
-student_details$hs_gpa_entry <- student_details$hs_gpa_entry |> factor(levels = c("No Score", "(1.49,3.19]", "(3.19,3.5]", "(3.5,3.82]", "(3.82,6.99]"))
+student_details$hs_gpa_entry_factor <- student_details$hs_gpa_entry |> cut(x, include.lowest = F) |> as.character()
+student_details$hs_gpa_entry_factor[which(is.na(student_details$hs_gpa_entry))] <- "No Score"
+student_details$hs_gpa_entry_factor <- student_details$hs_gpa_entry_factor |> 
+  factor(levels = c("No Score", unique(student_details$hs_gpa_entry_factor) |> 
+                      sort() |> {\(x) x[which(x != "No Score")]}()))
